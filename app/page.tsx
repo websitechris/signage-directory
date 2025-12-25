@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Metadata } from 'next'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -6,6 +7,22 @@ const supabase = createClient(
 )
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'A to Z of Signs - Find UK Sign Shops & Signage Services',
+  description: 'Find top-rated sign shops across the UK. Browse 1,485+ verified signage businesses in 566 cities with an average 4.8★ rating. Compare local sign makers, vehicle graphics, and custom signage services.',
+  keywords: ['sign shop', 'signage', 'vehicle graphics', 'sign makers', 'custom signage', 'shop signs', 'UK sign shops', 'signage services', 'vehicle wraps', 'LED signs'],
+  openGraph: {
+    title: 'A to Z of Signs - Find UK Sign Shops & Signage Services',
+    description: 'Find top-rated sign shops across the UK. Browse 1,485+ verified signage businesses in 566 cities with an average 4.8★ rating.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'A to Z of Signs - Find UK Sign Shops & Signage Services',
+    description: 'Find top-rated sign shops across the UK. Browse 1,485+ verified signage businesses in 566 cities.',
+  },
+}
 
 function normalizeCityName(cityName: string | null): string {
   if (!cityName) return ''

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -221,10 +222,52 @@ async function getBusinessesByCity(citySlug: string) {
     console.warn(`[WARNING] City name variations:`, cityNameVariations)
   }
   
+  // Calculate average rating for the city
+  const businessesWithRatings = filteredBusinesses.filter(b => b.rating !== null && b.rating !== undefined && !isNaN(Number(b.rating)))
+  const totalRating = businessesWithRatings.reduce((sum, b) => sum + (Number(b.rating) || 0), 0)
+  const avgRating = businessesWithRatings.length > 0 ? totalRating / businessesWithRatings.length : 0
+
   return {
     businesses: filteredBusinesses,
     cityName: displayCityName,
-    expectedCount
+    expectedCount,
+    avgRating
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>
+}): Promise<Metadata> {
+  const { city } = await params
+  const { cityName, expectedCount, avgRating } = await getBusinessesByCity(city)
+  
+  if (expectedCount === 0) {
+    return {
+      title: `Sign Shops in ${cityName}`,
+      description: `Find sign shops and signage services in ${cityName}.`,
+    }
+  }
+
+  const avgRatingDisplay = avgRating && avgRating > 0 ? avgRating.toFixed(1) : '4.8'
+  const title = `Sign Shops in ${cityName} - ${expectedCount} Top-Rated Signage Businesses`
+  const description = `Find the best sign shops in ${cityName}. Compare ${expectedCount} verified signage businesses with an average ${avgRatingDisplay}★ rating. Vehicle graphics, shop signs, and custom signage services in ${cityName}.`
+
+  return {
+    title,
+    description,
+    keywords: [`sign shop ${cityName}`, 'signage', 'vehicle graphics', 'sign makers', 'custom signage', 'shop signs', `signage services ${cityName}`],
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   }
 }
 

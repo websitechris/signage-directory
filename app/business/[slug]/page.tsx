@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +23,82 @@ async function getBusinessBySlug(slug: string) {
   return data
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const business = await getBusinessBySlug(slug)
+  
+  if (!business) {
+    return {
+      title: 'Business Not Found',
+      description: 'The requested business could not be found.',
+    }
+  }
+
+  // Check if rating exists and is valid
+  const ratingValue = business.rating
+  const hasRating = ratingValue !== null && 
+                   ratingValue !== undefined && 
+                   !isNaN(Number(ratingValue)) && 
+                   Number(ratingValue) >= 0
+  
+  const ratingDisplay = hasRating ? `${Number(ratingValue).toFixed(1)}★` : ''
+  const cityDisplay = business.address_info_city ? ` in ${business.address_info_city}` : ''
+  
+  const title = `${business.business_name} - Sign Shop${cityDisplay}${ratingDisplay ? ` | ${ratingDisplay}` : ''}`
+  
+  // Use first 155 characters of 'about' field for description, fallback to description field
+  let description = ''
+  if (business.about) {
+    description = business.about.substring(0, 155).trim()
+    if (business.about.length > 155) {
+      description += '...'
+    }
+  } else if (business.description) {
+    description = business.description.substring(0, 155).trim()
+    if (business.description.length > 155) {
+      description += '...'
+    }
+  } else {
+    description = `${business.business_name}${cityDisplay ? ` in ${business.address_info_city}` : ''}. Professional signage services${ratingDisplay ? ` with ${ratingDisplay} rating` : ''}.`
+  }
+
+  // Ensure description is between 150-160 characters
+  if (description.length < 150) {
+    description += ` Sign shop${cityDisplay ? ` in ${business.address_info_city}` : ''} offering signage services.`
+  }
+  if (description.length > 160) {
+    description = description.substring(0, 157) + '...'
+  }
+
+  return {
+    title,
+    description,
+    keywords: [
+      `sign shop ${business.address_info_city || ''}`,
+      'signage',
+      'vehicle graphics',
+      'sign makers',
+      'custom signage',
+      business.business_name || '',
+      business.category || '',
+    ].filter(Boolean),
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
+}
+
 export default async function BusinessPage({
   params,
 }: {
@@ -38,7 +115,6 @@ export default async function BusinessPage({
   const ratingValue = business.rating
   const hasRating = ratingValue !== null && 
                    ratingValue !== undefined && 
-                   ratingValue !== '' &&
                    !isNaN(Number(ratingValue)) && 
                    Number(ratingValue) >= 0
   
