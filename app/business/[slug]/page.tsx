@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic'
 async function getBusinessBySlug(slug: string) {
   const { data, error } = await supabase
     .from('signage_businesses')
-    .select('business_name, slug, category, description, phone, url, address, address_info_city, rating, votes_count, about, place_id')
+    .select('business_name, slug, category, description, phone, url, address, address_info_city, rating, votes_count, about, place_id, logo, main_image')
     .eq('slug', slug)
     .single()
   
@@ -141,6 +142,24 @@ export default async function BusinessPage({
 
       {/* Main content */}
       <section className="max-w-4xl mx-auto px-4 py-16">
+        {/* Business Image */}
+        <div className="mb-8 w-full h-[300px] relative rounded-lg overflow-hidden bg-gray-100 shadow-lg">
+          {(business.main_image || business.logo) ? (
+            <Image
+              src={business.main_image || business.logo || ''}
+              alt={`${business.business_name || 'Business'} image`}
+              width={400}
+              height={300}
+              className="w-full h-full object-cover"
+              unoptimized={(business.main_image || business.logo || '').startsWith('https://lh3.googleusercontent.com')}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+              <span className="text-gray-400 text-lg">No image available</span>
+            </div>
+          )}
+        </div>
+        
         {/* Rating and votes */}
         {(hasRating || business.votes_count) && (
           <div className="mb-8 p-6 bg-white rounded-lg shadow">

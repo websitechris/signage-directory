@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -163,6 +164,8 @@ async function getBusinessesByCity(citySlug: string) {
     votes_count: number | null
     about: string | null
     address_info_city: string | null
+    logo: string | null
+    main_image: string | null
   }> = []
   let cityOffset = 0
   
@@ -172,7 +175,7 @@ async function getBusinessesByCity(citySlug: string) {
     // Build base query
     let query = supabase
       .from('signage_businesses')
-      .select('id, place_id, business_name, slug, rating, votes_count, about, address_info_city')
+      .select('id, place_id, business_name, slug, rating, votes_count, about, address_info_city, logo, main_image')
       .range(cityOffset, end)
     
     // Use .in() to match all original city name variations
@@ -323,12 +326,34 @@ export default async function CityPage({
                              Number(ratingValue) >= 0
             const ratingDisplay = hasRating ? `${Number(ratingValue).toFixed(1)}★` : 'No rating'
             
+            // Determine which image to use (main_image preferred, fallback to logo)
+            const imageUrl = business.main_image || business.logo
+            const hasImage = imageUrl && imageUrl.trim() !== ''
+            
             return (
               <a
                 key={uniqueKey}
                 href={`/business/${businessSlug}`}
                 className="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-100"
               >
+                {/* Business Image */}
+                <div className="mb-4 w-full h-[150px] relative rounded-lg overflow-hidden bg-gray-100 shadow">
+                  {hasImage ? (
+                    <Image
+                      src={imageUrl}
+                      alt={`${business.business_name || 'Business'} image`}
+                      width={200}
+                      height={150}
+                      className="w-full h-full object-cover"
+                      unoptimized={imageUrl.startsWith('https://lh3.googleusercontent.com')}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <span className="text-gray-400 text-sm">No image</span>
+                    </div>
+                  )}
+                </div>
+                
                 <h3 className="text-gray-900 font-bold text-2xl mb-3">
                   {business.business_name}
                 </h3>
