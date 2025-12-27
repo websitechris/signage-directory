@@ -1,50 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface BusinessImageProps {
   src: string | null
   alt: string
   size: 'card' | 'detail'
   className?: string
-}
-
-function PlaceholderSVG({ size, className }: { size: 'card' | 'detail'; className?: string }) {
-  const viewBox = size === 'card' ? '0 0 200 150' : '0 0 400 300'
-  const fontSize = size === 'card' ? '16' : '24'
-  const rectWidth = size === 'card' ? '200' : '400'
-  const rectHeight = size === 'card' ? '150' : '300'
-
-  return (
-    <svg
-      width={rectWidth}
-      height={rectHeight}
-      viewBox={viewBox}
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id={`gradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#2563eb', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#1e40af', stopOpacity: 1 }} />
-        </linearGradient>
-      </defs>
-      <rect width={rectWidth} height={rectHeight} fill={`url(#gradient-${size})`} />
-      <text
-        x="50%"
-        y="50%"
-        dominantBaseline="middle"
-        textAnchor="middle"
-        fill="white"
-        fontSize={fontSize}
-        fontWeight="600"
-        fontFamily="system-ui, -apple-system, sans-serif"
-      >
-        Sign Shop
-      </text>
-    </svg>
-  )
 }
 
 export default function BusinessImage({
@@ -55,6 +18,9 @@ export default function BusinessImage({
 }: BusinessImageProps) {
   const [mounted, setMounted] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isLoadingRef = useRef(true)
 
   // Determine dimensions based on size
   const width = size === 'card' ? 200 : 400
@@ -65,18 +31,67 @@ export default function BusinessImage({
     setMounted(true)
   }, [])
 
-  // Reset error state when src changes
+  // Reset states when src changes
   useEffect(() => {
-    if (mounted) {
+    if (mounted && src) {
       setImageError(false)
+      setIsLoading(true)
+      isLoadingRef.current = true
+      
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      
+      // Set up timeout - if image doesn't load within 5 seconds, show placeholder
+      timeoutRef.current = setTimeout(() => {
+        if (isLoadingRef.current) {
+          setImageError(true)
+          setIsLoading(false)
+          isLoadingRef.current = false
+        }
+      }, 5000)
+      
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+      }
     }
   }, [src, mounted])
+
+  const handleError = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    setImageError(true)
+    setIsLoading(false)
+    isLoadingRef.current = false
+  }
+
+  const handleLoadingComplete = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    setIsLoading(false)
+    isLoadingRef.current = false
+  }
 
   // If no src, show placeholder
   if (!src) {
     return (
       <div suppressHydrationWarning>
-        <PlaceholderSVG size={size} className={className} />
+        <Image
+          src="/sign-placeholder.jpg"
+          alt="Sign shop placeholder"
+          width={width}
+          height={height}
+          className={className}
+          unoptimized={true}
+        />
       </div>
     )
   }
@@ -85,7 +100,14 @@ export default function BusinessImage({
   if (mounted && imageError) {
     return (
       <div suppressHydrationWarning>
-        <PlaceholderSVG size={size} className={className} />
+        <Image
+          src="/sign-placeholder.jpg"
+          alt="Sign shop placeholder"
+          width={width}
+          height={height}
+          className={className}
+          unoptimized={true}
+        />
       </div>
     )
   }
@@ -98,7 +120,8 @@ export default function BusinessImage({
         width={width}
         height={height}
         className={className}
-        onError={mounted ? () => setImageError(true) : undefined}
+        onError={mounted ? handleError : undefined}
+        onLoadingComplete={mounted ? handleLoadingComplete : undefined}
         unoptimized={true}
       />
     </div>
