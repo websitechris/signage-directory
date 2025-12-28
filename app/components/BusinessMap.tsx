@@ -22,10 +22,10 @@ export default function BusinessMap({
     let mounted = true
 
     Promise.all([
-      import('react-leaflet'),
       import('leaflet'),
+      // @ts-expect-error - CSS import doesn't have type declarations
       import('leaflet/dist/leaflet.css')
-    ]).then(([reactLeafletModule, L]) => {
+    ]).then(([L]) => {
       if (!mounted) return
 
       // Fix default marker icon
