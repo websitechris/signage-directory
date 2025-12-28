@@ -188,6 +188,8 @@ async function getBusinessesByCity(citySlug: string) {
       query = query.ilike('address_info_city', `%${matchingCity.normalizedCity}%`)
     }
     
+    // Order by main_image (nulls last) then by rating (descending)
+    // Note: Supabase doesn't support multiple order() calls easily, so we'll sort in JS after fetching
     const { data, error } = await query
       .order('rating', { ascending: false, nullsFirst: false })
     
@@ -217,7 +219,26 @@ async function getBusinessesByCity(citySlug: string) {
     }
   }
   
-  const filteredBusinesses = allCityBusinesses
+  // Sort businesses: those with images first, then by rating
+  const filteredBusinesses = allCityBusinesses.sort((a, b) => {
+    // First, sort by whether they have an image (main_image is not null)
+    const aHasImage = a.main_image !== null && a.main_image !== undefined && a.main_image !== ''
+    const bHasImage = b.main_image !== null && b.main_image !== undefined && b.main_image !== ''
+    
+    // Businesses with images come first
+    // Convert booleans to numbers: true = 1, false = 0
+    // If b has image and a doesn't: 1 - 0 = 1 (b comes first)
+    // If a has image and b doesn't: 0 - 1 = -1 (a comes first)
+    const imageComparison = Number(bHasImage) - Number(aHasImage)
+    if (imageComparison !== 0) {
+      return imageComparison
+    }
+    
+    // If both have images or both don't, sort by rating (highest first)
+    const aRating = a.rating ?? 0
+    const bRating = b.rating ?? 0
+    return bRating - aRating
+  })
   
   // Ensure we have businesses - if not, something went wrong
   if (filteredBusinesses.length === 0 && expectedCount > 0) {

@@ -20,8 +20,8 @@ export default function BusinessImage({ src, alt, size, className = '' }: Busine
     return (
       <div suppressHydrationWarning>
         <img
-          src="/placeholder.svg"
-          alt="Professional signage services"
+          src="/signshop-placeholder.jpg"
+          alt="Sign shop storefront"
           width={dimensions.width}
           height={dimensions.height}
           className={className}

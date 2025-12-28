@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import BusinessImage from '../../components/BusinessImage'
+import BusinessMap from '../../components/BusinessMap'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,10 +11,21 @@ const supabase = createClient(
 
 export const dynamic = 'force-dynamic'
 
+function cityToSlug(cityName: string): string {
+  return cityName.toLowerCase().trim().replace(/\s+/g, '-')
+}
+
+function renderStars(rating: number): string {
+  const fullStars = Math.floor(rating)
+  const emptyStars = 5 - fullStars
+  
+  return '★'.repeat(fullStars) + '☆'.repeat(emptyStars)
+}
+
 async function getBusinessBySlug(slug: string) {
   const { data, error } = await supabase
     .from('signage_businesses')
-    .select('business_name, slug, category, description, phone, url, address, address_info_city, rating, votes_count, about, place_id, logo, main_image')
+    .select('business_name, slug, category, description, phone, url, address, address_info_city, rating, votes_count, about, place_id, logo, main_image, latitude, longitude')
     .eq('slug', slug)
     .single()
   
@@ -142,7 +154,16 @@ export default async function BusinessPage({
 
       {/* Main content */}
       <section className="max-w-4xl mx-auto px-4 py-16">
-        {/* Business Image */}
+        {/* Back to city button */}
+        {business.address_info_city && (
+          <a 
+            href={`/${cityToSlug(business.address_info_city)}`}
+            className="inline-block mb-4 text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+          >
+            ← Back to {business.address_info_city} Businesses
+          </a>
+        )}
+        {/* Business Image with Text Overlay */}
         <div className="mb-8 w-full h-[300px] relative rounded-lg overflow-hidden bg-gray-100 shadow-lg">
           <BusinessImage
             src={business.main_image || business.logo}
@@ -150,29 +171,70 @@ export default async function BusinessPage({
             size="detail"
             className="w-full h-full object-cover"
           />
+          {/* Semi-transparent text overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent flex items-end">
+            <div className="w-full p-6 backdrop-blur-sm">
+              <h2 className="text-3xl font-bold text-white mb-2">
+                {business.business_name}
+              </h2>
+              {business.category && (
+                <p className="text-lg text-white/90 mb-1">
+                  {business.category}
+                </p>
+              )}
+              {business.address_info_city && (
+                <p className="text-base text-white/80">
+                  {business.address_info_city}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         
-        {/* Rating and votes */}
+        {/* Professional Rating Card */}
         {(hasRating || business.votes_count) && (
-          <div className="mb-8 p-6 bg-white rounded-lg shadow">
-            <div className="flex items-center gap-4">
+          <div className="mb-8 p-8 bg-white rounded-lg shadow-lg border border-gray-100">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              {/* Left side: Rating number and stars */}
+              <div className="flex items-center gap-6">
+                {hasRating && (
+                  <>
+                    <div className="text-5xl font-bold text-gray-900">
+                      {Number(ratingValue).toFixed(1)}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-3xl text-yellow-500 tracking-wide">
+                        {renderStars(Number(ratingValue))}
+                      </div>
+                      {business.votes_count !== undefined && business.votes_count !== null && business.votes_count > 0 && (
+                        <div className="text-sm text-gray-600 font-medium">
+                          {business.votes_count.toLocaleString()} {business.votes_count === 1 ? 'review' : 'reviews'}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                {!hasRating && business.votes_count !== undefined && business.votes_count !== null && business.votes_count > 0 && (
+                  <div className="text-gray-600 font-medium">
+                    {business.votes_count.toLocaleString()} {business.votes_count === 1 ? 'review' : 'reviews'} - No rating yet
+                  </div>
+                )}
+              </div>
+              
+              {/* Right side: Progress bar */}
               {hasRating && (
-                <div className="flex items-center">
-                  <span className="text-gray-900 font-bold text-2xl mr-2">
-                    {Number(ratingValue).toFixed(1)}
-                  </span>
-                  <span className="text-yellow-600 text-3xl">★</span>
+                <div className="flex-1 max-w-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">Rating</span>
+                    <span className="text-sm text-gray-600">{Number(ratingValue).toFixed(1)} / 5.0</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300"
+                      style={{ width: `${(Number(ratingValue) / 5) * 100}%` }}
+                    />
+                  </div>
                 </div>
-              )}
-              {business.votes_count !== undefined && business.votes_count !== null && business.votes_count > 0 && (
-                <span className="text-gray-700 font-medium text-lg">
-                  {business.votes_count} {business.votes_count === 1 ? 'vote' : 'votes'}
-                </span>
-              )}
-              {!hasRating && (
-                <span className="text-gray-600 font-medium">
-                  No rating yet
-                </span>
               )}
             </div>
           </div>
@@ -181,7 +243,7 @@ export default async function BusinessPage({
         {/* About section */}
         {business.about && (
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">About</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">About</h2>
             <div className="p-6 bg-white rounded-lg shadow">
               <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
                 {business.about}
@@ -193,7 +255,7 @@ export default async function BusinessPage({
         {/* Description section (if different from about) */}
         {business.description && business.description !== business.about && (
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Description</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Description</h2>
             <div className="p-6 bg-white rounded-lg shadow">
               <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
                 {business.description}
@@ -202,9 +264,25 @@ export default async function BusinessPage({
           </div>
         )}
 
+        {/* Location section */}
+        {business.latitude && business.longitude && 
+         !isNaN(Number(business.latitude)) && 
+         !isNaN(Number(business.longitude)) && (
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-white mb-4">Location</h2>
+            <div className="p-6 bg-white rounded-lg shadow">
+              <BusinessMap
+                latitude={Number(business.latitude)}
+                longitude={Number(business.longitude)}
+                businessName={business.business_name || 'Business'}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Contact section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Contact</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Contact</h2>
           <div className="p-6 bg-white rounded-lg shadow">
             <div className="space-y-4">
               {/* Address */}

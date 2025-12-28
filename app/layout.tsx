@@ -44,6 +44,18 @@ export default function RootLayout({
                 >
                   Browse Cities
                 </Link>
+                <Link 
+                  href="/blog" 
+                  className="text-base font-medium text-gray-700 hover:text-blue-600 hover:underline transition-colors"
+                >
+                  Blog
+                </Link>
+                <Link 
+                  href="/calculator" 
+                  className="text-base font-medium text-gray-700 hover:text-blue-600 hover:underline transition-colors"
+                >
+                  Cost Calculator
+                </Link>
               </div>
             </div>
           </div>
