@@ -159,7 +159,7 @@ export default async function BusinessPage({
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-5xl font-bold mb-6">
-            {business.business_name}
+            {business.business_name} - Sign Shop{business.address_info_city ? ` in ${business.address_info_city}` : ''}{hasRating ? ` | ${Number(ratingValue).toFixed(1)}★` : ''}
           </h1>
           {business.category && (
             <p className="text-xl mb-4 text-blue-100">
