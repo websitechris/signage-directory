@@ -29,20 +29,32 @@ export async function generateMetadata({
     }
   }
 
+  // Ensure description is between 150-160 characters
+  let description = post.excerpt
+  if (description.length < 150) {
+    // Try to extend with more context if available
+    description = post.excerpt + ' Expert guidance for UK businesses.'
+    if (description.length > 160) {
+      description = description.substring(0, 157) + '...'
+    }
+  } else if (description.length > 160) {
+    description = description.substring(0, 157) + '...'
+  }
+
   return {
     title: `${post.title} - A to Z of Signs`,
-    description: post.excerpt,
+    description,
     keywords: [post.category.toLowerCase(), 'signage', 'business signs', post.title],
     openGraph: {
       title: `${post.title} - A to Z of Signs`,
-      description: post.excerpt,
+      description,
       type: 'article',
       publishedTime: post.date,
     },
     twitter: {
       card: 'summary_large_image',
       title: `${post.title} - A to Z of Signs`,
-      description: post.excerpt,
+      description,
     },
   }
 }

@@ -275,8 +275,19 @@ export async function generateMetadata({
   }
 
   const avgRatingDisplay = avgRating && avgRating > 0 ? avgRating.toFixed(1) : '4.8'
-  const title = `Sign Shops in ${cityName} - ${expectedCount} Top-Rated Signage Businesses`
-  const description = `Find the best sign shops in ${cityName}. Compare ${expectedCount} verified signage businesses with an average ${avgRatingDisplay}★ rating. Vehicle graphics, shop signs, and custom signage services in ${cityName}.`
+  const title = `Sign Shops in ${cityName} - ${expectedCount} Top-Rated Businesses`
+  
+  // Create description with city name, business count, average rating, ensuring 150-160 chars
+  let description = `Find the best sign shops in ${cityName}. Compare ${expectedCount} verified signage businesses with an average ${avgRatingDisplay}★ rating. Vehicle graphics, shop signs, and custom signage services.`
+  
+  // Ensure description is between 150-160 characters
+  if (description.length < 150) {
+    // If too short, add more context
+    description = `Find the best sign shops in ${cityName}. Compare ${expectedCount} verified signage businesses with an average ${avgRatingDisplay}★ rating. Professional signage services available in ${cityName}.`
+  }
+  if (description.length > 160) {
+    description = description.substring(0, 157) + '...'
+  }
 
   return {
     title,

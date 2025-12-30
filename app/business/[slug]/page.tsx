@@ -63,28 +63,50 @@ export async function generateMetadata({
   
   const title = `${business.business_name} - Sign Shop${cityDisplay}${ratingDisplay ? ` | ${ratingDisplay}` : ''}`
   
-  // Use first 155 characters of 'about' field for description, fallback to description field
+  // Use first 150-160 characters of 'about' field for description, fallback to description field
   let description = ''
   if (business.about) {
-    description = business.about.substring(0, 155).trim()
-    if (business.about.length > 155) {
-      description += '...'
+    // Take first 160 chars, then trim to ensure we're within 150-160 range
+    let rawDescription = business.about.substring(0, 160).trim()
+    // If it's too short, pad it; if too long, trim it
+    if (rawDescription.length < 150) {
+      // Try to extend if there's more content
+      if (business.about.length > 160) {
+        rawDescription = business.about.substring(0, 160).trim()
+      }
+      // If still short, add context
+      if (rawDescription.length < 150) {
+        rawDescription += ` Sign shop${cityDisplay ? ` in ${business.address_info_city}` : ''}.`
+      }
     }
+    // Ensure it's not over 160
+    if (rawDescription.length > 160) {
+      rawDescription = rawDescription.substring(0, 157) + '...'
+    }
+    description = rawDescription
   } else if (business.description) {
-    description = business.description.substring(0, 155).trim()
-    if (business.description.length > 155) {
-      description += '...'
+    let rawDescription = business.description.substring(0, 160).trim()
+    if (rawDescription.length < 150) {
+      if (business.description.length > 160) {
+        rawDescription = business.description.substring(0, 160).trim()
+      }
+      if (rawDescription.length < 150) {
+        rawDescription += ` Sign shop${cityDisplay ? ` in ${business.address_info_city}` : ''}.`
+      }
     }
+    if (rawDescription.length > 160) {
+      rawDescription = rawDescription.substring(0, 157) + '...'
+    }
+    description = rawDescription
   } else {
     description = `${business.business_name}${cityDisplay ? ` in ${business.address_info_city}` : ''}. Professional signage services${ratingDisplay ? ` with ${ratingDisplay} rating` : ''}.`
-  }
-
-  // Ensure description is between 150-160 characters
-  if (description.length < 150) {
-    description += ` Sign shop${cityDisplay ? ` in ${business.address_info_city}` : ''} offering signage services.`
-  }
-  if (description.length > 160) {
-    description = description.substring(0, 157) + '...'
+    // Ensure fallback description is also 150-160 chars
+    if (description.length < 150) {
+      description += ` Sign shop${cityDisplay ? ` in ${business.address_info_city}` : ''} offering signage services.`
+    }
+    if (description.length > 160) {
+      description = description.substring(0, 157) + '...'
+    }
   }
 
   return {
